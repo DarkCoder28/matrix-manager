@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 eframe = { version = "0.29.0", features = ["serde", "wgpu"] }
-egui = { version = "0.29.0", features = [ "color-hex", "log", "persistence", "serde" ] }
+egui = { version = "0.29.1", features = [ "color-hex", "log", "persistence", "serde" ] }
 log = "0.4.22"
 wgpu = { version = "*", features = ["webgpu", "webgl"] }
 wasm-bindgen = { version = "0.2.93", features = [ "serde", "serde-serialize", "serde_json" ] }
