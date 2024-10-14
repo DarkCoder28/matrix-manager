@@ -21,7 +21,7 @@ futures-util = "0.3.31"
 regex = "1.11.0"
 
 [dependencies.web-sys]
-version = "0.3.70"
+version = "0.3.72"
 features = [
     "HtmlCanvasElement",
     "Request",
