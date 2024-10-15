@@ -126,7 +126,6 @@ impl EvaluateBoardVariable for BoardVariable {
                     data = data.split_off(1);
                     let _ = data.split_off(data.len() - 1);
                 }
-                info!("{:#?}", serde_json::to_string(&substring));
                 if let Some((start, end)) = substring {
                     let start = *start as usize;
                     let end = if *end==0 {data.len()} else {if *end < 0 {(data.len() as u64-((0-*end) as u64)) as usize} else {*end as usize}};
