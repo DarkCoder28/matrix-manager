@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fs,
+    fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
     sync::Arc,
@@ -178,15 +178,29 @@ async fn download_default_assets(config_file: &Path) {
     let mut assets_dir = config_dir.to_path_buf();
     assets_dir.push("assets/");
     let assets_dir = assets_dir.as_path();
+    // Fonts
     let mut fonts_dir = assets_dir.to_path_buf();
     fonts_dir.push("fonts/");
     let fonts_dir = fonts_dir.as_path();
     let mut fonts = HashMap::new();
     fonts.insert("5x8.bdf", "https://raw.githubusercontent.com/DarkCoder28/matrix-manager-default-assets/refs/heads/main/fonts/5x8.bdf");
     fonts.insert("7x14B.bdf", "https://raw.githubusercontent.com/DarkCoder28/matrix-manager-default-assets/refs/heads/main/fonts/7x14B.bdf");
-    fs::create_dir_all(fonts_dir).expect("Couldn't create fonts folder");
-    for (file_name, font) in &fonts {
-        let mut file_path = fonts_dir.to_path_buf();
+    download_files(fonts_dir, &fonts).await;
+    // Images
+    let mut icons_dir = assets_dir.to_path_buf();
+    icons_dir.push("images/icons/");
+    let icons_dir = icons_dir.as_path();
+    let mut icons = HashMap::new();
+    icons.insert("humidity.bmp", "https://raw.githubusercontent.com/DarkCoder28/matrix-manager-default-assets/refs/heads/main/images/icons/hum.bmp");
+    icons.insert("pressure.bmp", "https://raw.githubusercontent.com/DarkCoder28/matrix-manager-default-assets/refs/heads/main/images/icons/prs.bmp");
+    icons.insert("wind.bmp", "https://raw.githubusercontent.com/DarkCoder28/matrix-manager-default-assets/refs/heads/main/images/icons/wnd.bmp");
+    download_files(icons_dir, &icons).await;
+}
+
+async fn download_files(download_dir: &Path, files: &HashMap<&str, &str>) {
+    fs::create_dir_all(download_dir).expect("Couldn't create fonts folder");
+    for (file_name, font) in files {
+        let mut file_path = download_dir.to_path_buf();
         file_path.push(file_name);
         let file_path = file_path.as_path();
         let file_stream = ureq::get(font).set("User-Agent", USER_AGENT).call();
@@ -198,9 +212,21 @@ async fn download_default_assets(config_file: &Path) {
             );
             panic!();
         }
+        let output_file = File::create(file_path);
+        if output_file.is_err() {
+            error!(
+                "Error downloading \"{}\"\n{}",
+                file_name,
+                &file_stream.unwrap_err().to_string()
+            );
+            panic!();
+        }
+        let mut output_file = output_file.unwrap();
         let file_stream = file_stream.unwrap();
         if file_stream.status() == 200 {
-            fs::write(file_path, file_stream.into_string().unwrap().as_bytes()).unwrap();
+            // fs::write(file_path, file_stream.into_reader().).unwrap();
+            let mut stream_reader = file_stream.into_reader();
+            let _ = std::io::copy(&mut stream_reader, &mut output_file);
         } else {
             error!(
                 "Error downloading \"{}\"\nHTTP Response Code {}: {}",

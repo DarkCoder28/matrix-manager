@@ -31,7 +31,7 @@ async fn main() {
 
     let state = Arc::new(Mutex::new(State::new()));
 
-    let web_server = tokio::spawn(web_interface::web::run_web_server(running_config.clone()));
+    let web_server = tokio::spawn(web_interface::web::run_web_server(running_config.clone(), state.clone()));
     let matrix_server = tokio::spawn(matrix_server::server::run_matrix_server(running_config.clone(), state.clone()));
     let _ = matrix_server.await;
     web_server.abort();

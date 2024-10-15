@@ -1,4 +1,9 @@
-use crate::{config_manager::{Boards, ConfigWrapper}, font_manager, image_manager::get_image_list};
+use crate::{
+    config_manager::{Boards, ConfigWrapper},
+    font_manager,
+    image_manager::{get_image_list, get_image_path},
+    state_manager::StateWrapper,
+};
 use axum::{
     body::{Body, Bytes},
     extract::Path,
@@ -13,7 +18,7 @@ static FAVICON: &[u8] = include_bytes!("./favicon.ico");
 static WASM_BINARY: &[u8] = include_bytes!("../../../wasm_project/pkg/wasm_project_bg.wasm");
 static JS_LOADER: &str = include_str!("../../../wasm_project/pkg/wasm_project.js");
 
-pub async fn run_web_server(config: ConfigWrapper) {
+pub async fn run_web_server(config: ConfigWrapper, state: StateWrapper) {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(serve_index))
@@ -30,11 +35,15 @@ pub async fn run_web_server(config: ConfigWrapper) {
         .route("/api/devices", get(serve_devices))
         .route("/api/update/devices", post(accept_device_update))
         .route("/api/images", get(serve_image_index))
+        .route("/api/get_image/:image", get(serve_image))
         .fallback(serve_index)
-        .layer(Extension(config.clone()));
+        .layer(Extension(config.clone()))
+        .layer(Extension(state.clone()));
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:12345").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:12345")
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -81,7 +90,7 @@ async fn accept_vars_update(
 
 async fn accept_device_update(
     Extension(config): Extension<ConfigWrapper>,
-        Json(json): Json<DeviceConfigs>,
+    Json(json): Json<DeviceConfigs>,
 ) -> Response<Body> {
     {
         let mut config_mut = config.write().await;
@@ -157,7 +166,9 @@ async fn serve_vars(Extension(config): Extension<ConfigWrapper>) -> Response<Bod
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
-        .body(Body::from(serde_json::to_string(&config.board_variables).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&config.board_variables).unwrap(),
+        ))
         .unwrap()
 }
 
@@ -166,7 +177,9 @@ async fn serve_devices(Extension(config): Extension<ConfigWrapper>) -> Response<
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
-        .body(Body::from(serde_json::to_string(&config.device_configs).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&config.device_configs).unwrap(),
+        ))
         .unwrap()
 }
 
@@ -207,11 +220,48 @@ async fn serve_font(
         .unwrap()
 }
 
-async fn serve_image_index(Extension(config): Extension<ConfigWrapper>) -> Response<Body> {
-    let images_path = get_image_list(config.clone()).await;
+async fn serve_image_index(
+    Extension(config): Extension<ConfigWrapper>,
+    Extension(state): Extension<StateWrapper>,
+) -> Response<Body> {
+    let images_path = get_image_list(config.clone(), state.clone(), false).await;
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
         .body(Body::from(serde_json::to_string(&images_path).unwrap()))
+        .unwrap()
+}
+
+async fn serve_image(
+    Extension(config): Extension<ConfigWrapper>,
+    Extension(state): Extension<StateWrapper>,
+    Path(image): Path<String>,
+) -> Response<Body> {
+    let images = get_image_list(config.clone(), state.clone(), true).await;
+    let img_path = images.get(&image);
+    if img_path.is_none() {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("Content-Type", "text/plain")
+            .body(Body::from(StatusCode::NOT_FOUND.to_string()))
+            .unwrap();
+    }
+    let img_path = img_path.unwrap();
+    let img_path = get_image_path(config.clone(), Some(img_path)).await;
+    //
+    let file = fs::read(img_path).await;
+    if file.is_err() {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("Content-Type", "text/plain")
+            .body(Body::from(StatusCode::NOT_FOUND.as_str()))
+            .unwrap();
+    }
+    let file = file.unwrap();
+    //
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "image/bmp")
+        .body(Body::from(Bytes::from(file)))
         .unwrap()
 }

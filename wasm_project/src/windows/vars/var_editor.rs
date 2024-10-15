@@ -29,7 +29,7 @@ pub fn render_var_editor(
         let var_type = vars.get(&var_name).unwrap();
         match var_type {
             BoardVariable::URL(_, _, _) => render_url_var_editor(ui, &var_name, &mut vars, state.clone()),
-            BoardVariable::JsonURL(_, _, _) => render_json_extractor_var_editor(ui, &var_name, &mut vars, state.clone()),
+            BoardVariable::JsonURL(_, _, _, _) => render_json_extractor_var_editor(ui, &var_name, &mut vars, state.clone()),
             BoardVariable::Time(_) => render_datetime_var_editor(ui, &var_name, &mut vars, state.clone()),
         }
         render_config_panel(ctx, &vars);
@@ -151,7 +151,7 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
     ui.group(|ui| {
         ui.label("JSON Extractor Variable Editor");
         ui.separator();
-        if let BoardVariable::JsonURL(url_id, json_path, substring) = vars.get(var_name).unwrap() {
+        if let BoardVariable::JsonURL(url_id, json_path, round_numbers, substring) = vars.get(var_name).unwrap() {
             {
                 let mut edit_parent_id = url_id.clone().to_string();
                 ui.horizontal(|ui| {
@@ -160,7 +160,7 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                 });
                 if edit_parent_id.ne(&url_id.to_string()) {
                     if let Ok(val) = edit_parent_id.parse::<u32>() {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(val.to_owned(), json_path.to_owned(), *substring));
+                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(val.to_owned(), json_path.to_owned(), round_numbers.to_owned(), *substring));
                         state.lock().unwrap().vars_has_changed = true;
                         return;
                     }
@@ -173,7 +173,16 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                     ui.text_edit_singleline(&mut edit_path);
                 });
                 if edit_path.ne(json_path) {
-                    vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), edit_path, *substring));
+                    vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), edit_path, round_numbers.to_owned(), *substring));
+                    state.lock().unwrap().vars_has_changed = true;
+                    return;
+                }
+            }
+            {
+                let mut round_numbers_edit = round_numbers.clone();
+                ui.checkbox(&mut round_numbers_edit, "Round Numbers");
+                if round_numbers_edit.ne(round_numbers) {
+                    vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers_edit, *substring));
                     state.lock().unwrap().vars_has_changed = true;
                     return;
                 }
@@ -182,7 +191,7 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                 let substring_extract = if let Some(substring) = substring {
                     substring
                 } else {
-                    &(0 as u8,0 as u8)
+                    &(0 as u8,0 as i16)
                 };
                 let mut start = substring_extract.0.to_string();
                 let mut end = substring_extract.1.to_string();
@@ -197,22 +206,22 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                         ui.text_edit_singleline(&mut end);
                     });
                 });
-                let mut new_substr = (0 as u8, 0 as u8);
+                let mut new_substr = (0 as u8, 0 as i16);
                 if start.len() > 0 {
                     if let Ok(new_start) = start.parse::<u8>() {
                         new_substr.0 = new_start;
                     }
                 }
                 if end.len() > 0 {
-                    if let Ok(new_end) = end.parse::<u8>() {
+                    if let Ok(new_end) = end.parse::<i16>() {
                         new_substr.1 = new_end;
                     }
                 }
                 if new_substr.ne(substring_extract) {
                     if new_substr.0 == 0 && new_substr.1 == 0 {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), None));
+                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), None));
                     } else {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), Some(new_substr)));
+                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), Some(new_substr)));
                     }
                     state.lock().unwrap().vars_has_changed = true;
                     return;

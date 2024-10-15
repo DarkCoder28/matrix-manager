@@ -12,7 +12,7 @@ pub enum BoardVariable {
         String, /*url*/
         i64,    /*expiry-secs*/
     ),
-    JsonURL(u32 /*URL var_id*/, String /*path*/, Option<(u8, u8)> /*substring*/),
+    JsonURL(u32 /*URL var_id*/, String /*path*/, bool /* round_numbers */, Option<(u8, i16)> /*substring*/),
     Time(TimeData),
 }
 
@@ -27,7 +27,7 @@ impl BoardVariable {
     pub fn get_variable_type(&self) -> String {
         return match self {
             BoardVariable::URL(_id, _url, _expiry) => String::from("HTTP Request"),
-            BoardVariable::JsonURL(_url_id, _json_path, _substring) => String::from("URL JSON Value Extractor"),
+            BoardVariable::JsonURL(_url_id, _json_path, _round_numbers, _substring) => String::from("URL JSON Value Extractor"),
             BoardVariable::Time(_time_data) => String::from("DateTime"),
         };
     }
@@ -39,7 +39,7 @@ impl BoardVariable {
                 30,
             ),
             "URL JSON Value Extractor" => {
-                BoardVariable::JsonURL(get_rand(), String::from("0.title"), None)
+                BoardVariable::JsonURL(get_rand(), String::from("0.title"), false, None)
             }
             "DateTime" => BoardVariable::Time(TimeData::Time),
             _ => BoardVariable::Time(TimeData::Time),

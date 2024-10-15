@@ -9,7 +9,9 @@ pub fn render_board_list(ctx: &egui::Context, state: Arc<Mutex<State>>, board_ed
         .anchor(Align2::LEFT_TOP, [5., 5.])
         .show(ctx, |ui| {
             let boards = state.lock().unwrap().boards.lock().unwrap().clone();
-            for (board_name, _) in boards.iter() {
+            let mut keys = boards.keys().collect::<Vec<&String>>();
+            keys.sort();
+            for board_name in keys {
                 if ui.button(board_name).clicked() {
                     state.lock().unwrap().current_board = Some(board_name.to_string());
                     state.lock().unwrap().current_editor = Some(0);

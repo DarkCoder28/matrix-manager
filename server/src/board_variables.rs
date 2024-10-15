@@ -73,7 +73,7 @@ impl EvaluateBoardVariable for BoardVariable {
                     }
                 }
             }
-            BoardVariable::JsonURL(url_var_id, path, substring) => {
+            BoardVariable::JsonURL(url_var_id, path, round_numbers, substring) => {
                 let url_var = config
                     .board_variables
                     .iter()
@@ -121,16 +121,32 @@ impl EvaluateBoardVariable for BoardVariable {
                     }
                     json_data = temp.unwrap().to_owned();
                 }
+                let mut data = json_data.to_string();
                 if json_data.is_string() {
-                    let mut data = json_data.to_string().split_off(1);
+                    data = data.split_off(1);
                     let _ = data.split_off(data.len() - 1);
-                    return data;
                 }
-                let data = json_data.to_string();
+                info!("{:#?}", serde_json::to_string(&substring));
                 if let Some((start, end)) = substring {
-                    let new_str = &data[*start as usize..*end as usize];
+                    let start = *start as usize;
+                    let end = if *end==0 {data.len()} else {if *end < 0 {(data.len() as u64-((0-*end) as u64)) as usize} else {*end as usize}};
+                    let new_str = &data[start..end];
+                    if *round_numbers {
+                        if let Ok(num) = new_str.parse::<f32>() {
+                            let num = num.round();
+                            return num.to_string();
+                        }
+                        tracing::warn!("Unable to parse number '{}'.", &new_str);
+                    }
                     return new_str.to_string();
                 } else {
+                    if *round_numbers {
+                        if let Ok(num) = data.parse::<f32>() {
+                            let num = num.round();
+                            return num.to_string();
+                        }
+                        tracing::warn!("Unable to parse number '{}'.", &data);
+                    }
                     return data;
                 }
             }

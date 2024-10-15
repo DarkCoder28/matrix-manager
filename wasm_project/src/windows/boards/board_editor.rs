@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use egui::{Align2, Color32, Ui};
-use shared::boards::{BoardDefinition, BoardElement, BoardElementValue, ElementColour};
+use shared::boards::{BoardDefinition, BoardElement, BoardElementValue, ColourOption, ElementColour};
 use wasm_bindgen_futures::spawn_local;
 
 use crate::app::State;
@@ -185,19 +185,52 @@ fn render_board_elements(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mu
                         ui.vertical(|ui| {
                             ui.group(|ui| {
                                 ui.label("Colour");
-                                let mut colour = if open_board_elements.contains_key(&idx) {
-                                    open_board_elements.get(&idx).unwrap().colour.clone().unwrap_or_default().to_egui_colour()
-                                } else {
-                                    element.colour.clone().unwrap_or_default().to_egui_colour()
-                                };
-                                ui.color_edit_button_srgba(&mut colour);
-                                if colour.ne(&element.colour.clone().unwrap_or_default().to_egui_colour()) {
-                                    if !open_board_elements.contains_key(&idx) {
-                                        open_board_elements.insert(idx, element.clone());
+                                {
+                                    let mut colour_type = if open_board_elements.contains_key(&idx) {
+                                        open_board_elements.get(&idx).unwrap().colour.get_option()
+                                    } else {
+                                        element.colour.get_option()
+                                    };
+                                    egui::ComboBox::from_id_salt("abc19488-9692-482c-9ab3-2315a6cd1389")
+                                        .selected_text(&colour_type)
+                                        .show_ui(ui, |ui| {
+                                            for opt in ColourOption::get_options() {
+                                                ui.selectable_value(&mut colour_type, opt.clone(), opt.clone());
+                                            }
+                                        });
+                                    if colour_type.ne(&element.colour.get_option()) {
+                                        log::info!("{:#?} -> {:#?}", &colour_type, &element.colour.get_option());
+                                        if !open_board_elements.contains_key(&idx) {
+                                            open_board_elements.insert(idx, element.clone());
+                                        }
+                                        open_board_elements.get_mut(&idx).unwrap().colour = match colour_type.as_str() {
+                                            "Default" => ColourOption::Default,
+                                            "Specific" => ColourOption::Specific(ElementColour::default()),
+                                            "Parse Temperature" => ColourOption::ParseTemperature,
+                                            _ => ColourOption::Default
+                                        };
                                     }
-                                    open_board_elements.get_mut(&idx).unwrap().colour = Some(ElementColour::from_egui_colour(&colour));
                                 }
-                                ui.label(format!("({}, {}, {}, {})", colour.r(), colour.g(), colour.b(), colour.a()));
+                                {
+                                    let colour = if open_board_elements.contains_key(&idx) {
+                                        open_board_elements.get(&idx).unwrap().colour.clone()
+                                    } else {
+                                        element.colour.clone()
+                                    };
+                                    if let ColourOption::Specific(colour) = colour {
+                                        let mut colour_edit = colour.to_egui_colour();
+                                        ui.color_edit_button_srgba(&mut colour_edit);
+                                        if colour_edit.ne(&colour.to_egui_colour()) {
+                                            log::info!("{:#?} -> {:#?}", &colour.to_egui_colour(), &colour_edit);
+                                            if !open_board_elements.contains_key(&idx) {
+                                                open_board_elements.insert(idx, element.clone());
+                                            }
+                                            open_board_elements.get_mut(&idx).unwrap().colour = ColourOption::Specific(ElementColour::from_egui_colour(&colour_edit));
+                                            log::info!("{:#?}", open_board_elements);
+                                        }
+                                        ui.label(format!("({}, {}, {}, {})", colour.r, colour.g, colour.b, colour.a));
+                                    }
+                                }
                             });
                         });
                         ui.vertical(|ui| {
@@ -215,7 +248,7 @@ fn render_board_elements(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mu
                                             ui.selectable_value(&mut selected_font, font.clone(), font.clone());
                                         }
                                     });
-                                if open_board_elements.contains_key(&idx) || selected_font.ne(&element.font.clone().unwrap_or(String::from("5x8"))) {
+                                if selected_font.ne(&element.font.clone().unwrap_or(String::from("5x8"))) {
                                     if !open_board_elements.contains_key(&idx) {
                                         open_board_elements.insert(idx, element.clone());
                                     }
@@ -241,8 +274,7 @@ fn render_board_elements(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mu
                                 });
                         });
                         ui.text_edit_singleline(&mut value);
-                        if open_board_elements.contains_key(&idx)
-                            || var_type.ne(&element.value.extract_element_value().0.clone())
+                        if var_type.ne(&element.value.extract_element_value().0.clone())
                             || value.ne(&element.value.extract_element_value().1.clone()) {
                             if !open_board_elements.contains_key(&idx) {
                                 open_board_elements.insert(idx, element.clone());

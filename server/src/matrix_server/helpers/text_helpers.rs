@@ -1,13 +1,29 @@
 use std::path::PathBuf;
 
 use bdf::Bitmap;
-use shared::boards::ElementColour;
+use shared::{boards::{ColourOption, ElementColour}, device_config::DeviceConfig};
 
 use crate::config_manager::ConfigWrapper;
 
-pub(crate) async fn draw_text(config:ConfigWrapper, board_name: &str, x: Option<u8>, y: u8, colour: &Option<ElementColour>, font: &Option<String>, text: String) -> String {
+pub(crate) async fn draw_text(config:ConfigWrapper, device_config: &DeviceConfig, board_name: &str, x: Option<u8>, y: u8, colour: &ColourOption, font: &Option<String>, text: String) -> String {
     let mut instructions = String::new();
-    let colour = colour.clone().unwrap_or(ElementColour::default());
+    let colour = match colour {
+        ColourOption::Default => ElementColour::default(),
+        ColourOption::Specific(element_colour) => element_colour.to_owned(),
+        ColourOption::ParseTemperature => {
+            let mut col = ElementColour::default();
+            let re = regex::Regex::new(r"(?P<temp>\d+)").unwrap();
+            let cap = re.captures(&text);
+            if cap.is_some() {
+            let cap = cap.unwrap();
+                let temp = &cap["temp"];
+                if let Ok(temp) = temp.parse::<i32>() {
+                    col = device_config.temperature_colours.get_colour(temp);
+                }
+            }
+            col
+        },
+    };
     let font_name = truncate_string(font.clone().unwrap_or(String::from("5x8")), 9);
     instructions.push_str(&colour.to_string());
     instructions.push_str(&format!("f{:=<9}", font_name));
