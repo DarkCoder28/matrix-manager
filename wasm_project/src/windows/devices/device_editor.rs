@@ -17,7 +17,11 @@ pub fn render_device_editor(
     }
     egui::Window::new("Device Editor")
         .open(device_editor_open)
-        .anchor(Align2::CENTER_TOP, [0., 5.])
+        .anchor(Align2::CENTER_CENTER, [0., 0.])
+        .default_height(ctx.screen_rect().height()*0.75)
+        .max_height(ctx.screen_rect().height()*0.75)
+        .min_width(ctx.screen_rect().width()*0.2)
+        .scroll([true, false])
         .show(ctx, |ui| {
             let current_device = state.lock().unwrap().current_device.clone();
             let devices = state.lock().unwrap().devices.clone();
@@ -33,6 +37,7 @@ pub fn render_device_editor(
             render_temperature_colours_editor(ui, &device_ip, &mut devices, state.clone());
             render_brightness_editor(ui, &device_ip, &mut devices, state.clone());
             render_board_list_editor(ui, &device_ip, &mut devices, state.clone());
+            ui.label(format!("{:#?}", ctx.screen_rect()));
             //
             render_config_panel(ctx, &devices.get(&device_ip).unwrap());
         });

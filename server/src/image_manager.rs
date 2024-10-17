@@ -24,7 +24,7 @@ pub async fn get_image_list(config: ConfigWrapper, state: StateWrapper, force_re
     let files = flatten(&files);
     for file in files {
         let hash = Sha256::digest(file.clone());
-        let encoded_hash = general_purpose::STANDARD.encode(&hash);
+        let encoded_hash = general_purpose::URL_SAFE_NO_PAD.encode(&hash);
         let short_hash = encoded_hash.chars().take(5).collect();
         images.insert(short_hash, file);
     }
@@ -33,6 +33,12 @@ pub async fn get_image_list(config: ConfigWrapper, state: StateWrapper, force_re
         state.image_hashes.insert(image_hash.clone(), image_path.clone());
     }
     return images;
+}
+
+pub async fn get_hash_by_image_path(image_path: &str, config: ConfigWrapper, state: StateWrapper) -> Option<String> {
+    let image_list: HashMap<String, String> = get_image_list(config, state, false).await;
+    let reversed: HashMap<String, String> = image_list.into_iter().map(|(k,v)|(v,k)).collect();
+    reversed.get(image_path).map_or(None, |v|Some(v.to_owned()))
 }
 
 pub fn flatten(files: &Vec<FileTree>) -> Vec<String> {
