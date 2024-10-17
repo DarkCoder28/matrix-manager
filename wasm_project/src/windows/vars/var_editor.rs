@@ -15,7 +15,11 @@ pub fn render_var_editor(
     }
     egui::Window::new("Variable Editor")
     .open(vars_editor_open)
-    .anchor(Align2::CENTER_TOP, [0., 5.])
+    .anchor(Align2::CENTER_CENTER, [0., 0.])
+    .default_height(ctx.screen_rect().height()*0.75)
+    .max_height(ctx.screen_rect().height()*0.75)
+    .min_width(ctx.screen_rect().width()*0.2)
+    .scroll([true, false])
     .show(ctx, |ui| {
         let current_var = state.lock().unwrap().current_var.clone();
         let vars = state.lock().unwrap().vars.clone();

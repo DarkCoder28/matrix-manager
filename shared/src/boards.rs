@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BoardDefinition {
-    // referenced_board_variables: Vec<String>,
     pub name: String,
     pub size: (u8, u8),
     pub board_elements: Vec<BoardElement>,
@@ -109,6 +108,18 @@ impl ColourOption {
     pub fn get_options() -> Vec<String> {
         "Default;Specific;Parse Temperature".split(";").map(|x|x.to_string()).collect()
     }
+    pub fn from_str(type_str: &str) -> ColourOption {
+        match type_str {
+            "Default" => ColourOption::Default,
+            "Specific" => ColourOption::Specific(
+                ElementColour::default(),
+            ),
+            "Parse Temperature" => {
+                ColourOption::ParseTemperature
+            }
+            _ => ColourOption::Default,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Debug)]
@@ -140,7 +151,7 @@ impl ToString for ElementColour {
 #[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
 pub enum BoardElementValue {
     Text(String),
-    Img(String),
+    Img(String, bool /* dynamic */),
 }
 impl Default for BoardElementValue {
     fn default() -> Self {
@@ -152,16 +163,22 @@ impl BoardElementValue {
     pub fn extract_element_value(&self) -> (String, String) {
         match self {
             BoardElementValue::Text(x) => (String::from("Text"), x.clone()),
-            BoardElementValue::Img(x) => (String::from("Image"), x.clone()),
+            BoardElementValue::Img(x, _) => (String::from("Image"), x.clone()),
+        }
+    }
+    pub fn get_type(&self) -> String {
+        match self {
+            BoardElementValue::Text(_) => String::from("Text"),
+            BoardElementValue::Img(_, _) => String::from("Image"),
         }
     }
     pub fn get_types() -> Vec<String> {
-        vec!["Text".to_string(), "Image".to_string()]
+        "Text;Image".split(';').map(|x|x.to_string()).collect()
     }
-    pub fn from_strings(type_string: &str, value: String) -> BoardElementValue {
+    pub fn from_strings(type_string: &str, value: String, dynamic_img: bool) -> BoardElementValue {
         match type_string {
             "Text" => BoardElementValue::Text(value),
-            "Image" => BoardElementValue::Img(value),
+            "Image" => BoardElementValue::Img(value, dynamic_img),
             _ => BoardElementValue::Text(value),
         }
     }

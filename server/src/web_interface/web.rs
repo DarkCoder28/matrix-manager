@@ -35,7 +35,9 @@ pub async fn run_web_server(config: ConfigWrapper, state: StateWrapper) {
         .route("/api/devices", get(serve_devices))
         .route("/api/update/devices", post(accept_device_update))
         .route("/api/images", get(serve_image_index))
+        .route("/api/image_list", get(serve_image_list))
         .route("/api/get_image/:image", get(serve_image))
+        .route("/config.json", get(serve_current_config))
         .fallback(serve_index)
         .layer(Extension(config.clone()))
         .layer(Extension(state.clone()));
@@ -232,6 +234,19 @@ async fn serve_image_index(
         .unwrap()
 }
 
+async fn serve_image_list(
+    Extension(config): Extension<ConfigWrapper>,
+    Extension(state): Extension<StateWrapper>,
+) -> Response<Body> {
+    let images_path = get_image_list(config.clone(), state.clone(), false).await;
+    let images: Vec<String> = images_path.values().map(|x|x.to_owned()).collect();
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string(&images).unwrap()))
+        .unwrap()
+}
+
 async fn serve_image(
     Extension(config): Extension<ConfigWrapper>,
     Extension(state): Extension<StateWrapper>,
@@ -254,7 +269,7 @@ async fn serve_image(
         return Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("Content-Type", "text/plain")
-            .body(Body::from(StatusCode::NOT_FOUND.as_str()))
+            .body(Body::from(StatusCode::NOT_FOUND.to_string()))
             .unwrap();
     }
     let file = file.unwrap();
@@ -263,5 +278,14 @@ async fn serve_image(
         .status(StatusCode::OK)
         .header("Content-Type", "image/bmp")
         .body(Body::from(Bytes::from(file)))
+        .unwrap()
+}
+
+async fn serve_current_config(Extension(config): Extension<ConfigWrapper>) -> Response<Body> {
+    let config = config.read().await;
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string_pretty(&*config).unwrap()))
         .unwrap()
 }

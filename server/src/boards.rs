@@ -22,12 +22,13 @@ pub trait DrawBoardElement {
 }
 impl DrawBoardElement for BoardElement {
     async fn draw(&self, config: ConfigWrapper, state: StateWrapper, device_config: &DeviceConfig, board_name: &str) -> String {
+        let legacy_mode = device_config.proto_version == 0;
         match self.value {
             BoardElementValue::Text(_) => {
-                return draw_text(config.clone(), device_config, board_name, self.x, self.y, &self.colour, &self.font, self.value.substitute_variables(config, state).await).await;
+                return draw_text(config.clone(), device_config, board_name, self.x, self.y, &self.colour, &self.font, self.value.substitute_variables(config.clone(), state.clone()).await).await;
             },
-            BoardElementValue::Img(_) => {
-                return draw_image(self.x, self.y, self.value.substitute_variables(config, state).await).await;
+            BoardElementValue::Img(_,_) => {
+                return draw_image(self.x, self.y, self.value.substitute_variables(config.clone(), state.clone()).await, legacy_mode, config.clone(), state.clone()).await;
             }
         }
     }
@@ -59,22 +60,24 @@ impl BoardElementValueSubstitute for BoardElementValue {
                 }
                 return display_text;
             }
-            BoardElementValue::Img(x) => {
+            BoardElementValue::Img(x, dynamic) => {
                 if DEBUG {
                     tracing::info!("Substituting var '{}'", &x);
                 }
                 let config = config.read().await;
                 let mut display_text = x.clone();
-                for (key, val) in &config.board_variables {
-                    if DEBUG {
-                        tracing::info!("\tSubstituting  '__{}__'", key);
-                    }
-                    let key_match = format!("__{}__", key);
-                    if display_text.contains(&key_match) {
-                        display_text = display_text.replace(&key_match, &val.eval_variable(&key_match, &config, state.clone()).await);
-                    }
-                    if DEBUG {
-                        tracing::info!("\t\tSubstitution Complete... New String: '{}'", &display_text);
+                if *dynamic {
+                    for (key, val) in &config.board_variables {
+                        if DEBUG {
+                            tracing::info!("\tSubstituting  '__{}__'", key);
+                        }
+                        let key_match = format!("__{}__", key);
+                        if display_text.contains(&key_match) {
+                            display_text = display_text.replace(&key_match, &val.eval_variable(&key_match, &config, state.clone()).await);
+                        }
+                        if DEBUG {
+                            tracing::info!("\t\tSubstitution Complete... New String: '{}'", &display_text);
+                        }
                     }
                 }
                 return display_text;

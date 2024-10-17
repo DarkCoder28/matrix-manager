@@ -6,7 +6,7 @@ use std::{
 use eframe::egui;
 use shared::{
     board_variables::BoardVariables,
-    boards::{BoardDefinition, BoardElement},
+    boards::BoardDefinition,
     device_config::DeviceConfigs,
 };
 
@@ -39,7 +39,8 @@ pub struct State {
     pub add_board_dialog: AddDialog,
     pub board_name_edit: Option<String>,
     pub rename_board: Option<(String, String)>,
-    pub open_board_elements: HashMap<usize, BoardElement>,
+    pub rename_board_element: Option<String>,
+    pub fonts_sorted: bool,
     //
     pub vars: Arc<Mutex<BoardVariables>>,
     pub current_var: Option<String>,
@@ -52,6 +53,8 @@ pub struct State {
     pub current_device: Option<String>,
     pub add_device_dialog: AddDialog,
     pub devices_has_changed: bool,
+    //
+    pub images: Arc<Mutex<Vec<String>>>,
     //
     pub current_editor: Option<u8>,
 }
@@ -81,6 +84,7 @@ impl MyEguiApp {
         let var_data: Arc<Mutex<BoardVariables>> = Arc::new(Mutex::new(BoardVariables::new()));
         let device_data: Arc<Mutex<DeviceConfigs>> = Arc::new(Mutex::new(DeviceConfigs::new()));
         let font_data: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        let image_data: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
 
         // Load Boards from server...
         get("/api/boards", board_data.clone());
@@ -94,12 +98,16 @@ impl MyEguiApp {
         // Load Fonts from server...
         get("/api/fonts", font_data.clone());
 
+        // Load Images from server...
+        get("/api/image_list", image_data.clone());
+
         let setup = MyEguiApp {
             state: Arc::new(Mutex::new(State {
                 boards: board_data,
                 vars: var_data,
                 devices: device_data,
                 fonts: font_data,
+                images: image_data,
                 ..Default::default()
             })),
             ..Default::default()
