@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use egui::{Align2, Ui};
-use shared::boards::BoardDefinition;
+use shared::boards::{BoardDefinition, BoardElement};
 
 use crate::{app::State, windows::boards::board_element_editor::render_element_editor};
 
@@ -34,7 +34,7 @@ pub fn render_board_editor(
             }
             render_board_size_editor(ui, board);
             render_board_elements(ui, board, state.clone());
-            // TODO: Make 'Add Element' button
+            render_board_element_add_delete(ui, board, state.clone());
             //
             render_config_panel(ctx, board);
         });
@@ -119,6 +119,28 @@ fn render_board_elements(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mu
                 render_element_editor(ui, element, open.is_some(), state.clone());
             });
     }
+}
+
+fn render_board_element_add_delete(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mutex<State>>) {
+    ui.horizontal(|ui| {
+        if ui.button("Add Element").clicked() {
+            board.board_elements.push(BoardElement::default());
+            state.lock().unwrap().boards_has_changed = true;
+        }
+        let mut to_delete = String::from("Delete Element");
+        let element_list = board.board_elements.iter().map(|x|x.name.clone()).collect::<Vec<String>>();
+        egui::ComboBox::from_id_salt("6b32ddc5-209c-4cc0-b64c-6bf1e0829ec0")
+            .selected_text(&to_delete)
+            .show_ui(ui, |ui| {
+                for element in element_list {
+                    ui.selectable_value(&mut to_delete, element.clone(), element);
+                }
+            });
+        if to_delete.ne("Delete Element") {
+            board.board_elements.retain(|x|x.name.ne(&to_delete));
+            state.lock().unwrap().boards_has_changed = true;
+        }
+    });
 }
 
 fn render_config_panel(ctx: &egui::Context, board: &BoardDefinition) {
