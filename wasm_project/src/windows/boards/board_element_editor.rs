@@ -9,8 +9,6 @@ pub fn render_element_editor(ui: &mut Ui, board_element: &mut BoardElement, refo
     let value_type = board_element.value.get_type();
     let mut modified = false;
     ui.group(|ui| {
-        // TODO: Finish up image element editor
-        // TODO: Add element delete button
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 if render_element_name_editor(ui, board_element, refocus_name, state.clone()) { modified = true; }

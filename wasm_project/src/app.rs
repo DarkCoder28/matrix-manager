@@ -14,11 +14,10 @@ use crate::{
     get::get,
     windows::{
         boards::{
-            board_add::render_board_add, board_editor::render_board_editor,
-            board_list::render_board_list,
+            board_add::render_board_add, board_delete::render_board_delete, board_editor::render_board_editor, board_list::render_board_list
         },
-        devices::{device_editor::render_device_editor, device_list::render_device_list},
-        vars::{var_add::render_var_add, var_editor::render_var_editor, var_list::render_var_list},
+        devices::{device_delete::render_device_delete, device_editor::render_device_editor, device_list::render_device_list},
+        vars::{var_add::render_var_add, var_delete::render_var_delete, var_editor::render_var_editor, var_list::render_var_list},
     },
 };
 
@@ -41,6 +40,7 @@ pub struct State {
     pub rename_board: Option<(String, String)>,
     pub rename_board_element: Option<String>,
     pub fonts_sorted: bool,
+    pub deleting_board: Option<String>,
     //
     pub vars: Arc<Mutex<BoardVariables>>,
     pub current_var: Option<String>,
@@ -48,11 +48,13 @@ pub struct State {
     pub vars_has_changed: bool,
     pub var_name_edit: Option<String>,
     pub rename_var: Option<(String, String)>,
+    pub deleting_var: Option<String>,
     //
     pub devices: Arc<Mutex<DeviceConfigs>>,
     pub current_device: Option<String>,
     pub add_device_dialog: AddDialog,
     pub devices_has_changed: bool,
+    pub deleting_device: Option<(String, String)>,
     //
     pub images: Arc<Mutex<Vec<String>>>,
     //
@@ -128,13 +130,16 @@ impl eframe::App for MyEguiApp {
             render_board_list(ctx, self.state.clone(), &mut self.board_editor_open);
             render_board_editor(ctx, self.state.clone(), &mut self.board_editor_open);
             render_board_add(ctx, self.state.clone());
+            render_board_delete(ctx, self.state.clone());
             //
             render_var_list(ctx, self.state.clone(), &mut self.var_editor_open);
             render_var_editor(ctx, self.state.clone(), &mut self.var_editor_open);
             render_var_add(ctx, self.state.clone());
+            render_var_delete(ctx, self.state.clone());
             //
             render_device_list(ctx, self.state.clone(), &mut self.device_editor_open);
             render_device_editor(ctx, self.state.clone(), &mut self.device_editor_open);
+            render_device_delete(ctx, self.state.clone());
             //
             // Lock State
             let mut state = self.state.lock().unwrap();

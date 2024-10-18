@@ -12,11 +12,16 @@ pub fn render_var_list(ctx: &egui::Context, state: Arc<Mutex<State>>, var_editor
             let mut keys = vars.keys().collect::<Vec<&String>>();
             keys.sort();
             for var_name in keys {
-                if ui.button(var_name).clicked() {
-                    state.lock().unwrap().current_var = Some(var_name.to_string());
-                    state.lock().unwrap().current_editor = Some(1);
-                    *var_editor_open = true;
-                }
+                ui.horizontal(|ui| {
+                    if ui.button("🗑").clicked() {
+                        state.lock().unwrap().deleting_var = Some(var_name.to_owned());
+                    }
+                    if ui.button(var_name).clicked() {
+                        state.lock().unwrap().current_var = Some(var_name.to_string());
+                        state.lock().unwrap().current_editor = Some(1);
+                        *var_editor_open = true;
+                    }
+                });
             }
             ui.separator();
             if ui.button("Add var").clicked() {

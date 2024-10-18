@@ -18,7 +18,12 @@ pub fn render_device_list(ctx: &egui::Context, state: Arc<Mutex<State>>, device_
                 if device_ip.eq("default") {
                     continue;
                 }
-                render_device(ui, device_ip, device_data, state.clone(), device_editor_open);
+                ui.horizontal(|ui| {
+                    if ui.button("🗑").clicked() {
+                        state.lock().unwrap().deleting_device = Some((device_ip.to_owned(), device_data.name.to_owned()));
+                    }
+                    render_device(ui, device_ip, device_data, state.clone(), device_editor_open);
+                });
             }
             ui.separator();
             if ui.button("Add device").clicked() {

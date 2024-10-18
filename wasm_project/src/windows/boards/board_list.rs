@@ -12,11 +12,16 @@ pub fn render_board_list(ctx: &egui::Context, state: Arc<Mutex<State>>, board_ed
             let mut keys = boards.keys().collect::<Vec<&String>>();
             keys.sort();
             for board_name in keys {
-                if ui.button(board_name).clicked() {
-                    state.lock().unwrap().current_board = Some(board_name.to_string());
-                    state.lock().unwrap().current_editor = Some(0);
-                    *board_editor_open = true;
-                }
+                ui.horizontal(|ui| {
+                    if ui.button("🗑").clicked() {
+                        state.lock().unwrap().deleting_board = Some(board_name.to_owned());
+                    }
+                    if ui.button(board_name).clicked() {
+                        state.lock().unwrap().current_board = Some(board_name.to_string());
+                        state.lock().unwrap().current_editor = Some(0);
+                        *board_editor_open = true;
+                    }
+                });
             }
             ui.separator();
             if ui.button("Add Board").clicked() {
