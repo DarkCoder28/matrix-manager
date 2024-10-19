@@ -17,6 +17,7 @@ pub trait EvaluateBoardVariable {
         config: &Config,
         state: StateWrapper,
     ) -> String;
+    fn determine_substr_end(e_in: i16, data: &str) -> usize;
     fn weekday_to_string(day: Weekday) -> String;
     fn month_to_string(month: u32) -> String;
 }
@@ -128,12 +129,7 @@ impl EvaluateBoardVariable for BoardVariable {
                 }
                 if let Some((start, end)) = substring {
                     let start = *start as usize;
-                    let end = match *end {
-                        e if e as usize > data.len() => data.len(),
-                        0 => data.len(),
-                        e if e < 0 => (data.len() as u64 - ((0 - e) as u64)) as usize,
-                        _ => *end as usize,
-                    };
+                    let end = Self::determine_substr_end(*end, &data);
                     let new_str = &data[start..end];
                     if *round_numbers {
                         if let Ok(num) = new_str.parse::<f32>() {
@@ -189,6 +185,21 @@ impl EvaluateBoardVariable for BoardVariable {
                 // Mon DY YEAR
             }
         }
+    }
+
+    fn determine_substr_end(e_in: i16, data: &str) -> usize {
+        let length = data.len();
+        if e_in == 0 {
+            return length
+        } else if e_in < 0 {
+            return length.saturating_sub(e_in.abs() as usize)
+        } else {
+            if (e_in as usize) < length {
+                return e_in as usize
+            } else {
+                return length
+            }
+        };
     }
 
     fn weekday_to_string(day: Weekday) -> String {
