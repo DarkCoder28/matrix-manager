@@ -128,7 +128,12 @@ impl EvaluateBoardVariable for BoardVariable {
                 }
                 if let Some((start, end)) = substring {
                     let start = *start as usize;
-                    let end = if *end==0 {data.len()} else {if *end < 0 {(data.len() as u64-((0-*end) as u64)) as usize} else {*end as usize}};
+                    let end = match *end {
+                        e if e as usize > data.len() => data.len(),
+                        0 => data.len(),
+                        e if e < 0 => (data.len() as u64 - ((0 - e) as u64)) as usize,
+                        _ => *end as usize,
+                    };
                     let new_str = &data[start..end];
                     if *round_numbers {
                         if let Ok(num) = new_str.parse::<f32>() {

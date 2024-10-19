@@ -5,13 +5,6 @@ use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::{TcpListener, 
 use crate::{boards::BoardRender, config_manager::ConfigWrapper, state_manager::StateWrapper};
 
 pub async fn run_matrix_server(config: ConfigWrapper, state: StateWrapper) -> io::Result<()> {
-    // {
-    //     let local_config = config.read().await;
-    //     let board = local_config.get_boards().get("clock").expect("Failed to make board");
-    //     let cfg = local_config.device_configs.get("default").unwrap();
-    //     tracing::info!("{}", board.render(cfg, config.clone(), state.clone()).await);
-    // }
-
     let listener = TcpListener::bind("0.0.0.0:12312").await?;
     loop {
         if let Ok((socket, addr)) = listener.accept().await {
