@@ -199,11 +199,11 @@ async fn download_default_assets(config_file: &Path) {
 
 async fn download_files(download_dir: &Path, files: &HashMap<&str, &str>) {
     fs::create_dir_all(download_dir).expect("Couldn't create fonts folder");
-    for (file_name, font) in files {
+    for (file_name, file) in files {
         let mut file_path = download_dir.to_path_buf();
         file_path.push(file_name);
         let file_path = file_path.as_path();
-        let file_stream = ureq::get(font).set("User-Agent", USER_AGENT).call();
+        let file_stream = ureq::get(file).set("User-Agent", USER_AGENT).call();
         if (&file_stream).is_err() {
             error!(
                 "Error downloading \"{}\"\n{}",
