@@ -14,7 +14,7 @@ log = "0.4.22"
 wgpu = { version = "*", features = ["webgpu", "webgl"] }
 wasm-bindgen = { version = "0.2.95", features = [ "serde", "serde-serialize", "serde_json" ] }
 wasm-bindgen-futures = "0.4.45"
-serde = "1.0.210"
+serde = "1.0.213"
 serde_json = "1.0.128"
 shared = { path = "../shared" }
 futures-util = "0.3.31"
