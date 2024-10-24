@@ -1,4 +1,4 @@
-// #[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(target_arch = "x86_64"))]
 mod drive_matrix;
 #[cfg(target_arch = "x86_64")]
 mod emulate;
