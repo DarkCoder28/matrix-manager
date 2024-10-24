@@ -26,8 +26,10 @@ pub fn render_element_editor(ui: &mut Ui, board_element: &mut BoardElement, refo
             ui.separator();
         }
         if match value_type.as_str() {
-            "Text" => render_text_value_editor(ui, &mut board_element.value),
+            "Text" => render_text_value_editor(ui, "Text Editor", &mut board_element.value),
             "Image" => render_image_value_editor(ui, &board_element.name, &mut board_element.value, state.clone()),
+            "Pixel" => render_pixel_value_editor(ui, board_element),
+            "Line" => render_line_value_editor(ui, board_element),
             _ => false
         } { modified = true; }
     });
@@ -199,9 +201,9 @@ fn render_text_font_editor(ui: &mut Ui, board_element: &mut BoardElement, state:
     modified
 }
 
-fn render_text_value_editor(ui: &mut Ui, value: &mut BoardElementValue) -> bool {
+fn render_text_value_editor(ui: &mut Ui, title: &str, value: &mut BoardElementValue) -> bool {
     let mut modified = false;
-    ui.label("Text Editor");
+    ui.label(title);
     if let BoardElementValue::Text(value) = value {
         let old_val = value.clone();
         ui.text_edit_singleline(value);
@@ -271,7 +273,68 @@ fn render_image_value_editor_dynamic(ui: &mut Ui, value: &mut String) -> bool {
     modified
 }
 
+fn render_pixel_value_editor(ui: &mut Ui, board_element: &mut BoardElement) -> bool {
+    let mut modified = false;
+    if render_text_colour_editor(ui, board_element) { modified = true; }
+    modified
+}
 
+fn render_line_value_editor(ui: &mut Ui, board_element: &mut BoardElement) -> bool {
+    let mut modified = false;
+    if let BoardElementValue::Line(pos_x_static, pos_y_static, temp_var) = board_element.value.clone() {
+        let mut pos_x = pos_x_static;
+        let mut pos_y = pos_y_static;
+        if render_text_colour_editor(ui, board_element) { modified = true; }
+        render_line_end_position_editor(ui, &mut pos_x, &mut pos_y);
+        if pos_x != pos_x_static || pos_y != pos_y_static {
+            board_element.value = BoardElementValue::Line(pos_x, pos_y, temp_var.clone());
+            modified = true;
+        }
+        if board_element.colour.get_option() == "Parse Temperature" {
+            let mut temp_element = BoardElementValue::Text(temp_var.clone());
+            if render_text_value_editor(ui, "Temperature Source", &mut temp_element) {
+                board_element.value = BoardElementValue::Line(pos_x, pos_y, temp_element.extract_element_value().1);
+                modified = true;
+            }
+        }
+    }
+    modified
+}
+
+fn render_line_end_position_editor(ui: &mut Ui, pos_x: &mut u8, pos_y: &mut u8) {
+    let mut x_edit = element_u8_to_string(*pos_x);
+    let mut y_edit = element_u8_to_string(*pos_y);
+    ui.label("Position");
+    ui.horizontal(|ui| {
+        ui.label("X:");
+        ui.add(egui::TextEdit::singleline(&mut x_edit).hint_text("Centered").desired_width(64.));
+        ui.separator();
+        ui.label("Y:");
+        ui.add(egui::TextEdit::singleline(&mut y_edit).desired_width(64.));
+    });
+    if x_edit.ne(&element_u8_to_string(*pos_x)) {
+        let num_string = get_num_from_string(&x_edit);
+        if num_string.is_none() {
+            *pos_x = 0;
+        } else {
+            let num_string = num_string.unwrap();
+            if let Ok(x) = num_string.parse::<u8>() {
+                *pos_x = x;
+            }
+        }
+    }
+    if y_edit.ne(&element_u8_to_string(*pos_y)) {
+        let num_string = get_num_from_string(&y_edit);
+        if num_string.is_none() {
+            *pos_y = 0;
+        } else {
+            let num_string = num_string.unwrap();
+            if let Ok(y) = num_string.parse::<u8>() {
+                *pos_y = y;
+            }
+        }
+    }
+}
 
 // Utility Functions
 fn element_u8_to_string(val: u8) -> String {
