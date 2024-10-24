@@ -18,7 +18,7 @@ ureq = { version = "2.10.1", features = [ "native-certs", "json" ] }
 directories = "5.0.1"
 derive_builder = { version = "0.20.2" }
 bdf = "0.6.0"
-anyhow = "1.0.89"
+anyhow = "1.0.90"
 tower-http = "0.6.1"
 tokio-util = "0.7.12"
 regex = "1.11.0"
