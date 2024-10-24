@@ -37,7 +37,6 @@ pub fn render_device_editor(
             render_temperature_colours_editor(ui, &device_ip, &mut devices, state.clone());
             render_brightness_editor(ui, &device_ip, &mut devices, state.clone());
             render_board_list_editor(ui, &device_ip, &mut devices, state.clone());
-            ui.label(format!("{:#?}", ctx.screen_rect()));
             //
             render_config_panel(ctx, &devices.get(&device_ip).unwrap());
         });

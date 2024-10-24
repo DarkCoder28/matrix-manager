@@ -226,7 +226,7 @@ async fn serve_image_index(
     Extension(config): Extension<ConfigWrapper>,
     Extension(state): Extension<StateWrapper>,
 ) -> Response<Body> {
-    let images_path = get_image_list(config.clone(), state.clone(), false).await;
+    let images_path = get_image_list(config.clone(), state.clone(), true).await;
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
@@ -238,7 +238,7 @@ async fn serve_image_list(
     Extension(config): Extension<ConfigWrapper>,
     Extension(state): Extension<StateWrapper>,
 ) -> Response<Body> {
-    let images_path = get_image_list(config.clone(), state.clone(), false).await;
+    let images_path = get_image_list(config.clone(), state.clone(), true).await;
     let images: Vec<String> = images_path.values().map(|x|x.to_owned()).collect();
     Response::builder()
         .status(StatusCode::OK)
@@ -252,7 +252,7 @@ async fn serve_image(
     Extension(state): Extension<StateWrapper>,
     Path(image): Path<String>,
 ) -> Response<Body> {
-    let images = get_image_list(config.clone(), state.clone(), true).await;
+    let images = get_image_list(config.clone(), state.clone(), false).await;
     let img_path = images.get(&image);
     if img_path.is_none() {
         return Response::builder()

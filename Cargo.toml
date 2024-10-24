@@ -1,4 +1,4 @@
 [workspace]
-members = ["server", "shared", "wasm_project"]
+members = [ "client","server", "shared", "wasm_project"]
 resolver = "2"
 license = "MIT"

@@ -96,7 +96,11 @@ pub enum ColourOption {
     Specific(ElementColour),
     ParseTemperature,
 }
-
+impl Default for ColourOption {
+    fn default() -> Self {
+        Self::Default
+    }
+}
 impl ColourOption {
     pub fn get_option(&self) -> String {
         match self {
@@ -152,6 +156,8 @@ impl ToString for ElementColour {
 pub enum BoardElementValue {
     Text(String),
     Img(String, bool /* dynamic */),
+    Pixel,
+    Line(u8, u8, String),
 }
 impl Default for BoardElementValue {
     fn default() -> Self {
@@ -164,21 +170,27 @@ impl BoardElementValue {
         match self {
             BoardElementValue::Text(x) => (String::from("Text"), x.clone()),
             BoardElementValue::Img(x, _) => (String::from("Image"), x.clone()),
+            BoardElementValue::Pixel => (String::from("Pixel"), String::new()),
+            BoardElementValue::Line(_, _, x) => (String::from("Line"), x.clone()),
         }
     }
     pub fn get_type(&self) -> String {
         match self {
             BoardElementValue::Text(_) => String::from("Text"),
             BoardElementValue::Img(_, _) => String::from("Image"),
+            BoardElementValue::Pixel => String::from("Pixel"),
+            BoardElementValue::Line(_, _, _) => String::from("Line"),
         }
     }
     pub fn get_types() -> Vec<String> {
-        "Text;Image".split(';').map(|x|x.to_string()).collect()
+        "Text;Image;Pixel;Line".split(';').map(|x|x.to_string()).collect()
     }
     pub fn from_strings(type_string: &str, value: String, dynamic_img: bool) -> BoardElementValue {
         match type_string {
             "Text" => BoardElementValue::Text(value),
             "Image" => BoardElementValue::Img(value, dynamic_img),
+            "Pixel" => BoardElementValue::Pixel,
+            "Line" => BoardElementValue::Line(0, 0, value),
             _ => BoardElementValue::Text(value),
         }
     }
