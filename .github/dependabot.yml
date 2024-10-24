@@ -11,5 +11,6 @@ updates:
       - "/server/"
       - "/wasm_project/"
       - "/shared/"
+      - "/client"
     schedule:
       interval: "weekly"
