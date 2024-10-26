@@ -30,7 +30,7 @@ impl EvaluateBoardVariable for BoardVariable {
         state: StateWrapper,
     ) -> String {
         match self {
-            BoardVariable::URL(var_id, url, expiry) => {
+            BoardVariable::URL(var_id, url, expiry, headers) => {
                 let datetime = chrono::Utc::now();
                 let mut state = state.lock().await;
                 if DEBUG {
@@ -50,7 +50,11 @@ impl EvaluateBoardVariable for BoardVariable {
                     "Updating Variable Cache for URL variable '{}'",
                     &variable_name
                 );
-                let response = ureq::get(url).call();
+                let mut req = ureq::get(url);
+                for (header, value) in headers {
+                    req = req.set(header, value);
+                }
+                let response = req.call();
                 match response {
                     Ok(resp) => match resp.into_string() {
                         Ok(x) => {

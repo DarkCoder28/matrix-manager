@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use egui::{Align2, Color32, RichText};
+use egui::{popup, Align2, Color32, RichText};
 
 use crate::{app::State, post::post};
 
@@ -16,11 +16,30 @@ pub fn render_board_list(ctx: &egui::Context, state: Arc<Mutex<State>>, board_ed
                     if ui.button("🗑").clicked() {
                         state.lock().unwrap().deleting_board = Some(board_name.to_owned());
                     }
-                    if ui.button(board_name).clicked() {
+                    let board_btn = ui.button(board_name);
+                    if board_btn.clicked() {
                         state.lock().unwrap().current_board = Some(board_name.to_string());
                         state.lock().unwrap().current_editor = Some(0);
                         *board_editor_open = true;
                     }
+                    let popup_id = ui.make_persistent_id(format!("board_ctx->{}", board_name));
+                    if board_btn.secondary_clicked() {
+                        ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                    }
+                    popup::popup_below_widget(ui, popup_id, &board_btn, egui::PopupCloseBehavior::CloseOnClickOutside, |ui| {
+                        ui.set_width(128.);
+                        if ui.button(format!("Duplicate {}", board_name)).clicked() {
+                            let mut duplicate_board_name = format!("{}_duplicate", board_name);
+                            while boards.contains_key(&duplicate_board_name) {
+                                duplicate_board_name = format!("{}-", duplicate_board_name);
+                            }
+                            let mut duplicate_board = boards.get(board_name).unwrap().to_owned();
+                            duplicate_board.name = duplicate_board_name.clone();
+                            let mut state = state.lock().unwrap();
+                            state.boards.lock().unwrap().insert(duplicate_board_name, duplicate_board);
+                            state.boards_has_changed = true;
+                        }
+                    });
                 });
             }
             ui.separator();
