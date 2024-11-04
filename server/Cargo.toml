@@ -21,7 +21,7 @@ bdf = "0.6.0"
 anyhow = "1.0.90"
 tower-http = "0.6.1"
 tokio-util = "0.7.12"
-regex = "1.11.0"
+regex = "1.11.1"
 sha2 = "0.10.8"
 base64 = "0.22.1"
 
