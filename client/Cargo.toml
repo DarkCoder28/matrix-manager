@@ -14,7 +14,7 @@ directories = "5.0.1"
 pico-args = "0.5.0"
 tempfile = "3.13.0"
 tinybmp = "0.6.0"
-ureq = { version = "2.10.1", features = [ "native-certs" ] }
+ureq = { version = "2.12.1", features = [ "native-certs" ] }
 
 #[target.'cfg(target_arch = "aarch64")'.dependencies]
 rpi-led-panel = "0.6.0"
