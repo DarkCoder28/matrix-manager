@@ -9,13 +9,14 @@ pub trait BoardRender {
 impl BoardRender for BoardDefinition {
     async fn render(&self, device_config: &DeviceConfig, config: ConfigWrapper, state: StateWrapper) -> Option<String> {
         let current_brightness = get_current_brightness(&device_config.brightness);
-        if self.use_skip_brightness_threshold && current_brightness < device_config.skip_brightness_threshold {
-            return None;
-        }
         let mut render_buffer = format!("b{:>03}======x=========cFFF======", current_brightness);
         // Send clear board when brightness is 0
         if current_brightness == 0 {
             return Some(render_buffer);
+        }
+        // Do not send an update if the board is marked to skip if the device is below the brightness threshold and the device is below the threshold
+        if self.use_skip_brightness_threshold && current_brightness < device_config.skip_brightness_threshold {
+            return None;
         }
         // Continue normally otherwise
         for board_element in &self.board_elements {
