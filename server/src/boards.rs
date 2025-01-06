@@ -13,9 +13,11 @@ impl BoardRender for BoardDefinition {
             return None;
         }
         let mut render_buffer = format!("b{:>03}======x=========cFFF======", current_brightness);
+        // Send clear board when brightness is 0
         if current_brightness == 0 {
             return Some(render_buffer);
         }
+        // Continue normally otherwise
         for board_element in &self.board_elements {
             render_buffer.push_str(&board_element.draw(config.clone(), state.clone(), device_config, &self.name).await);
         }
