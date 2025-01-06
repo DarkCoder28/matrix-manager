@@ -17,7 +17,7 @@ chrono = { version = "0.4.38", features = [ "serde" ] }
 ureq = { version = "2.12.1", features = [ "native-certs", "json" ] }
 directories = "5.0.1"
 derive_builder = { version = "0.20.2" }
-bdf = "0.6.0"
+bdf2 = "0.7.1"
 anyhow = "1.0.93"
 tower-http = "0.6.2"
 tokio-util = "0.7.12"

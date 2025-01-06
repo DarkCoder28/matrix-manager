@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use bdf::Bitmap;
+use bdf2::Bitmap;
 use shared::{boards::{ColourOption, ElementColour}, device_config::DeviceConfig};
 
 use crate::config_manager::ConfigWrapper;
@@ -68,7 +68,7 @@ fn truncate_string(text: String, length: usize) -> String {
 async fn get_glyph_from_char(config: ConfigWrapper, font_name: &str, character: char) -> Bitmap {
     let mut font_path = PathBuf::from(config.read().await.config_path.clone()).parent().expect("Config file has no parent???").to_path_buf();
     font_path.push(format!("assets/fonts/{}.bdf", font_name));
-    let font = match bdf::open(font_path.as_path()) {
+    let font = match bdf2::open(font_path.as_path()) {
         Ok(x) => x,
         Err(_) => {
             tracing::info!("Font path: {}", font_path.display());
