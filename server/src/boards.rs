@@ -4,16 +4,22 @@ use shared::{boards::{BoardDefinition, BoardElement, BoardElementValue, ElementC
 static DEBUG: bool = false;
 
 pub trait BoardRender {
-    async fn render(&self, device_config: &DeviceConfig, config:ConfigWrapper, state:StateWrapper) -> String;
+    async fn render(&self, device_config: &DeviceConfig, config:ConfigWrapper, state:StateWrapper) -> Option<String>;
 }
 impl BoardRender for BoardDefinition {
-    async fn render(&self, device_config: &DeviceConfig, config: ConfigWrapper, state: StateWrapper) -> String {
+    async fn render(&self, device_config: &DeviceConfig, config: ConfigWrapper, state: StateWrapper) -> Option<String> {
         let current_brightness = get_current_brightness(&device_config.brightness);
+        if self.use_skip_brightness_threshold && current_brightness < device_config.skip_brightness_threshold {
+            return None;
+        }
         let mut render_buffer = format!("b{:>03}======x=========cFFF======", current_brightness);
+        if current_brightness == 0 {
+            return Some(render_buffer);
+        }
         for board_element in &self.board_elements {
             render_buffer.push_str(&board_element.draw(config.clone(), state.clone(), device_config, &self.name).await);
         }
-        return render_buffer;
+        return Some(render_buffer);
     }
 }
 

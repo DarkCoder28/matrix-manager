@@ -25,6 +25,7 @@
 			"serde",
 			"srgba",
 			"substr",
+			"succ",
 			"tempdir",
 			"tempfile",
 			"Timelike",

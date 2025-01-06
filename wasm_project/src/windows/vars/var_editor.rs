@@ -103,6 +103,27 @@ fn render_datetime_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVaria
                     log::info!("Selection Changed: {} -> {}", &orig_val, &selected);
                     vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::from_str(&selected).unwrap()));
                     state.lock().unwrap().vars_has_changed = true;
+                    return;
+                }
+            }
+            if let TimeData::Weekday(offset, substring) = data.clone() {
+                let mut offset_edit = offset.to_string();
+                ui.separator();
+                ui.label("Offset:");
+                ui.text_edit_singleline(&mut offset_edit);
+                if offset_edit.ne(&offset.to_string()) {
+                    log::info!("Offset changed: {} -> {}", offset, &offset_edit);
+                    if let Ok(new_val) = offset_edit.parse::<u8>() {
+                        vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::Weekday(new_val, substring.to_owned())));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    }
+                }
+                let new_substr = render_substring_editor(ui, &substring);
+                if new_substr.ne(&substring) {
+                    vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::Weekday(offset, new_substr)));
+                    state.lock().unwrap().vars_has_changed = true;
+                    return;
                 }
             }
         }
@@ -246,41 +267,9 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                 }
             }
             {
-                let substring_extract = if let Some(substring) = substring {
-                    substring
-                } else {
-                    &(0 as u8,0 as i16)
-                };
-                let mut start = substring_extract.0.to_string();
-                let mut end = substring_extract.1.to_string();
-                ui.label("Substring");
-                ui.indent("3b8169be-1a9a-4629-ac22-cfcdb4599bb5", |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Start:");
-                        ui.text_edit_singleline(&mut start);
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("End:");
-                        ui.text_edit_singleline(&mut end);
-                    });
-                });
-                let mut new_substr = (0 as u8, 0 as i16);
-                if start.len() > 0 {
-                    if let Ok(new_start) = start.parse::<u8>() {
-                        new_substr.0 = new_start;
-                    }
-                }
-                if end.len() > 0 {
-                    if let Ok(new_end) = end.parse::<i16>() {
-                        new_substr.1 = new_end;
-                    }
-                }
-                if new_substr.ne(substring_extract) {
-                    if new_substr.0 == 0 && new_substr.1 == 0 {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), None));
-                    } else {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), Some(new_substr)));
-                    }
+                let new_substr = render_substring_editor(ui, substring);
+                if new_substr.ne(substring) {
+                    vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), new_substr));
                     state.lock().unwrap().vars_has_changed = true;
                     return;
                 }
@@ -289,9 +278,56 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
     });
 }
 
+fn render_substring_editor(ui: &mut Ui, substring: &Option<(u8, i16)>) -> Option<(u8, i16)> {
+    let substring_extract = if let Some(substring) = substring {
+        substring
+    } else {
+        &(0 as u8,0 as i16)
+    };
+    let mut start = substring_extract.0.to_string();
+    let mut end = substring_extract.1.to_string();
+    ui.label("Substring");
+    ui.indent("3b8169be-1a9a-4629-ac22-cfcdb4599bb5", |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Start:");
+            ui.text_edit_singleline(&mut start);
+        });
+        ui.horizontal(|ui| {
+            ui.label("End:");
+            ui.text_edit_singleline(&mut end);
+        });
+    });
+    let mut new_substr = (0 as u8, 0 as i16);
+    if start.len() > 0 {
+        if let Ok(new_start) = start.parse::<u8>() {
+            new_substr.0 = new_start;
+        }
+    }
+    if end.len() > 0 {
+        if let Ok(new_end) = end.parse::<i16>() {
+            new_substr.1 = new_end;
+        }
+    }
+    if new_substr.ne(substring_extract) {
+        if new_substr.0 == 0 && new_substr.1 == 0 {
+            return None;
+        } else {
+            return Some(new_substr);
+        }
+    }
+    return substring.to_owned();
+}
+
 fn render_config_panel(ctx: &egui::Context, vars: &BoardVariables) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Variables Config")
         .anchor(Align2::RIGHT_TOP, [-5.0, 5.0])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             ui.label(serde_json::to_string(vars).unwrap());
         });

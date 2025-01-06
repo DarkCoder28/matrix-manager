@@ -78,6 +78,7 @@ async fn process_connection(mut socket: TcpStream, address: SocketAddr, config: 
     // Render Loop
     let mut current_board = 0;
     let mut board_errors = 0;
+    let mut skipped_boards = 0;
     loop {
         {
             let local_config = config.read().await;
@@ -109,7 +110,17 @@ async fn process_connection(mut socket: TcpStream, address: SocketAddr, config: 
                 continue;
             }
             board_errors = 0;
-            if writer.write_all(board.render(device_config, config.clone(), state.clone()).await.as_bytes()).await.is_err() {
+            let rendered_board = board.render(device_config, config.clone(), state.clone()).await;
+            if rendered_board.is_none() {
+                current_board+=1;
+                skipped_boards += 1;
+                if skipped_boards > device_config.boards.len() {
+                    sleep(Duration::from_secs(15)).await;
+                }
+                continue;
+            }
+            let rendered_board = rendered_board.unwrap();
+            if writer.write_all(rendered_board.as_bytes()).await.is_err() {
                 tracing::info!("Connection from [{}:{}] closed.", address.ip(), address.port());
                 return;
             }

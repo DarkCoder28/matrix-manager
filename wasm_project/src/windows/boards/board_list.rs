@@ -5,8 +5,15 @@ use egui::{popup, Align2, Color32, RichText};
 use crate::{app::State, post::post};
 
 pub fn render_board_list(ctx: &egui::Context, state: Arc<Mutex<State>>, board_editor_open: &mut bool) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Boards")
         .anchor(Align2::LEFT_TOP, [5., 5.])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             let boards = state.lock().unwrap().boards.lock().unwrap().clone();
             let mut keys = boards.keys().collect::<Vec<&String>>();
@@ -42,15 +49,25 @@ pub fn render_board_list(ctx: &egui::Context, state: Arc<Mutex<State>>, board_ed
                     });
                 });
             }
-            ui.separator();
-            if ui.button("Add Board").clicked() {
-                state.lock().unwrap().add_board_dialog.open = true;
-            }
-            let boards_changed = state.lock().unwrap().boards_has_changed;
-            if boards_changed {
-                if ui.button(RichText::new("Post Changes").color(Color32::RED)).clicked() {
-                    post("/api/update/boards", &boards);
-                    state.lock().unwrap().boards_has_changed = false;
+            {
+                let boards_changed = state.lock().unwrap().boards_has_changed;
+                let mut spacer = ui.available_height();
+                spacer -= 30.;
+                if boards_changed {
+                    spacer -= 30.;
+                }
+                if spacer > 0. {
+                    ui.add_space(spacer);
+                }
+                ui.separator();
+                if ui.button("Add Board").clicked() {
+                    state.lock().unwrap().add_board_dialog.open = true;
+                }
+                if boards_changed {
+                    if ui.button(RichText::new("Post Changes").color(Color32::RED)).clicked() {
+                        post("/api/update/boards", &boards);
+                        state.lock().unwrap().boards_has_changed = false;
+                    }
                 }
             }
         });

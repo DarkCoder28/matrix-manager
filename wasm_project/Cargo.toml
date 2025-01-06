@@ -32,3 +32,6 @@ features = [
     "Window",
     "XmlHttpRequest",
 ]
+
+#[dev-dependencies]
+#wasm-pack = "0.12.1

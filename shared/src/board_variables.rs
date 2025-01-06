@@ -61,9 +61,9 @@ impl BoardVariable {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum TimeData {
-    Weekday,
+    Weekday(u8/* offset */, Option<(u8, i16)> /*substring*/),
     Time,
     Date,
 }
@@ -71,7 +71,7 @@ pub enum TimeData {
 impl Display for TimeData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let out = match self {
-            TimeData::Weekday => String::from("Weekday"),
+            TimeData::Weekday(_, _) => String::from("Weekday"),
             TimeData::Time => String::from("Time"),
             TimeData::Date => String::from("Date"),
         };
@@ -84,7 +84,7 @@ impl FromStr for TimeData {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "Weekday" => Self::Weekday,
+            "Weekday" => Self::Weekday(0, None),
             "Time" => Self::Time,
             "Date" => Self::Date,
             _ => Self::Time,
@@ -94,7 +94,7 @@ impl FromStr for TimeData {
 
 impl TimeData {
     pub fn get_all_time_data_types() -> Vec<String> {
-        vec![TimeData::Weekday.to_string(), TimeData::Time.to_string(), TimeData::Date.to_string()]
+        vec!["Weekday".to_string(), TimeData::Time.to_string(), TimeData::Date.to_string()]
     }
 }
 
