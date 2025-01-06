@@ -30,7 +30,7 @@ impl EvaluateBoardVariable for BoardVariable {
         state: StateWrapper,
     ) -> String {
         match self {
-            BoardVariable::URL(var_id, url, expiry) => {
+            BoardVariable::URL(var_id, url, expiry, headers) => {
                 let datetime = chrono::Utc::now();
                 let mut state = state.lock().await;
                 if DEBUG {
@@ -50,7 +50,11 @@ impl EvaluateBoardVariable for BoardVariable {
                     "Updating Variable Cache for URL variable '{}'",
                     &variable_name
                 );
-                let response = ureq::get(url).call();
+                let mut req = ureq::get(url);
+                for (header, value) in headers {
+                    req = req.set(header, value);
+                }
+                let response = req.call();
                 match response {
                     Ok(resp) => match resp.into_string() {
                         Ok(x) => {
@@ -153,8 +157,20 @@ impl EvaluateBoardVariable for BoardVariable {
             BoardVariable::Time(time_data) => {
                 let datetime = chrono::Local::now();
                 match time_data {
-                    TimeData::Weekday => {
-                        return Self::weekday_to_string(datetime.weekday());
+                    TimeData::Weekday(offset, substring) => {
+                        let mut weekday = datetime.weekday();
+                        for _ in 0..*offset {
+                            weekday = weekday.succ();
+                        }
+                        if let Some((start, end)) = substring {
+                            let data = Self::weekday_to_string(weekday);
+                            let start = *start as usize;
+                            let end = Self::determine_substr_end(*end, &data);
+                            let new_str = &data[start..end];
+                            return new_str.to_string();
+                        } else {
+                            return Self::weekday_to_string(weekday);
+                        }
                     }
                     TimeData::Time => {
                         let am_pm_text = match (datetime.hour() / 12) as i32 == 0 {

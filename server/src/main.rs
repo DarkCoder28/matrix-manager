@@ -18,7 +18,7 @@ mod image_manager;
 
 #[tokio::main]
 async fn main() {
-    let logging_subscriber = tracing_subscriber::FmtSubscriber::builder().with_max_level(tracing::Level::TRACE).finish();
+    let logging_subscriber = tracing_subscriber::FmtSubscriber::builder().with_max_level(tracing::Level::INFO).finish();
     tracing::subscriber::set_global_default(logging_subscriber).expect("Failed to setup logging");
 
     let mut args = Arguments::from_env();

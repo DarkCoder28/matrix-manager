@@ -32,7 +32,7 @@ pub fn render_var_editor(
         render_var_type_selector(ui, &var_name, &mut vars, state.clone());
         let var_type = vars.get(&var_name).unwrap();
         match var_type {
-            BoardVariable::URL(_, _, _) => render_url_var_editor(ui, &var_name, &mut vars, state.clone()),
+            BoardVariable::URL(_, _, _, _) => render_url_var_editor(ui, &var_name, &mut vars, state.clone()),
             BoardVariable::JsonURL(_, _, _, _) => render_json_extractor_var_editor(ui, &var_name, &mut vars, state.clone()),
             BoardVariable::Time(_) => render_datetime_var_editor(ui, &var_name, &mut vars, state.clone()),
         }
@@ -103,6 +103,27 @@ fn render_datetime_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVaria
                     log::info!("Selection Changed: {} -> {}", &orig_val, &selected);
                     vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::from_str(&selected).unwrap()));
                     state.lock().unwrap().vars_has_changed = true;
+                    return;
+                }
+            }
+            if let TimeData::Weekday(offset, substring) = data.clone() {
+                let mut offset_edit = offset.to_string();
+                ui.separator();
+                ui.label("Offset:");
+                ui.text_edit_singleline(&mut offset_edit);
+                if offset_edit.ne(&offset.to_string()) {
+                    log::info!("Offset changed: {} -> {}", offset, &offset_edit);
+                    if let Ok(new_val) = offset_edit.parse::<u8>() {
+                        vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::Weekday(new_val, substring.to_owned())));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    }
+                }
+                let new_substr = render_substring_editor(ui, &substring);
+                if new_substr.ne(&substring) {
+                    vars.insert(var_name.to_string(), BoardVariable::Time(TimeData::Weekday(offset, new_substr)));
+                    state.lock().unwrap().vars_has_changed = true;
+                    return;
                 }
             }
         }
@@ -112,7 +133,7 @@ fn render_datetime_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVaria
 fn render_url_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVariables, state: Arc<Mutex<State>>) {
     ui.group(|ui| {
         ui.label("URL Variable Editor");
-        if let BoardVariable::URL(id, url, timeout_secs) = vars.get(var_name).unwrap() {
+        if let BoardVariable::URL(id, url, timeout_secs, real_headers) = vars.get(var_name).unwrap().clone() {
             ui.group(|ui| {
                 ui.label("URL ID");
                 ui.label(id.to_string());
@@ -124,8 +145,8 @@ fn render_url_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVariables,
                     ui.label("URL: ");
                     ui.text_edit_singleline(&mut edit_url);
                 });
-                if edit_url.ne(url) {
-                    vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), edit_url, timeout_secs.to_owned()));
+                if edit_url.ne(&url) {
+                    vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), edit_url, timeout_secs.to_owned(), real_headers.to_owned()));
                     state.lock().unwrap().vars_has_changed = true;
                     return;
                 }
@@ -141,12 +162,66 @@ fn render_url_var_editor(ui: &mut Ui, var_name: &str, vars: &mut BoardVariables,
                         if val < 15 {
                             val = 15;
                         }
-                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), val));
+                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), val, real_headers.to_owned()));
                         state.lock().unwrap().vars_has_changed = true;
                         return;
                     }
                 }
             }
+            ui.collapsing("GET Headers", |ui| {
+                let headers = real_headers.clone();
+                let mut headers = headers.iter().collect::<Vec<(&String, &String)>>();
+                headers.sort_by(|a,b|a.0.cmp(b.0));
+                for (header, value) in headers {
+                    let mut header_edit = header.clone();
+                    let mut value_edit = value.clone();
+                    ui.horizontal(|ui| {
+                        egui::TextEdit::singleline(&mut header_edit)
+                            .desired_width(ui.available_width()*0.5).show(ui);
+                        egui::TextEdit::singleline(&mut value_edit)
+                            .desired_width(ui.available_width()).show(ui);
+                    });
+                    if header_edit.ne(header) {
+                        let mut headers = real_headers.clone();
+                        headers.remove(header);
+                        headers.insert(header_edit, value_edit);
+                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), timeout_secs.to_owned(), headers));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    } else if value_edit.ne(value) {
+                        let mut headers = real_headers.clone();
+                        headers.insert(header.to_owned(), value_edit);
+                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), timeout_secs.to_owned(), headers));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    }
+                }
+                ui.separator();
+                ui.horizontal(|ui| {
+                    if ui.button("Add Header").clicked() {
+                        let mut headers = real_headers.to_owned();
+                        headers.insert(String::from("X-New-Header"), String::new());
+                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), timeout_secs.to_owned(), headers));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    }
+                    let mut selection = String::from("Delete Header");
+                    egui::ComboBox::from_id_salt("4fb55c28-9d00-448a-93ca-39214ee36970")
+                        .selected_text(&selection)
+                        .show_ui(ui, |ui|{
+                            for header in real_headers.keys() {
+                                ui.selectable_value(&mut selection, header.clone(), header.clone());
+                            }
+                        });
+                    if selection.ne("Delete Header") {
+                        let mut headers = real_headers.to_owned();
+                        headers.remove(&selection);
+                        vars.insert(var_name.to_string(), BoardVariable::URL(id.to_owned(), url.to_owned(), timeout_secs.to_owned(), headers));
+                        state.lock().unwrap().vars_has_changed = true;
+                        return;
+                    }
+                });
+            });
         }
     });
 }
@@ -192,41 +267,9 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
                 }
             }
             {
-                let substring_extract = if let Some(substring) = substring {
-                    substring
-                } else {
-                    &(0 as u8,0 as i16)
-                };
-                let mut start = substring_extract.0.to_string();
-                let mut end = substring_extract.1.to_string();
-                ui.label("Substring");
-                ui.indent("3b8169be-1a9a-4629-ac22-cfcdb4599bb5", |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Start:");
-                        ui.text_edit_singleline(&mut start);
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label("End:");
-                        ui.text_edit_singleline(&mut end);
-                    });
-                });
-                let mut new_substr = (0 as u8, 0 as i16);
-                if start.len() > 0 {
-                    if let Ok(new_start) = start.parse::<u8>() {
-                        new_substr.0 = new_start;
-                    }
-                }
-                if end.len() > 0 {
-                    if let Ok(new_end) = end.parse::<i16>() {
-                        new_substr.1 = new_end;
-                    }
-                }
-                if new_substr.ne(substring_extract) {
-                    if new_substr.0 == 0 && new_substr.1 == 0 {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), None));
-                    } else {
-                        vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), Some(new_substr)));
-                    }
+                let new_substr = render_substring_editor(ui, substring);
+                if new_substr.ne(substring) {
+                    vars.insert(var_name.to_string(), BoardVariable::JsonURL(url_id.to_owned(), json_path.to_owned(), round_numbers.to_owned(), new_substr));
                     state.lock().unwrap().vars_has_changed = true;
                     return;
                 }
@@ -235,9 +278,56 @@ fn render_json_extractor_var_editor(ui: &mut Ui, var_name: &str, vars: &mut Boar
     });
 }
 
+fn render_substring_editor(ui: &mut Ui, substring: &Option<(u8, i16)>) -> Option<(u8, i16)> {
+    let substring_extract = if let Some(substring) = substring {
+        substring
+    } else {
+        &(0 as u8,0 as i16)
+    };
+    let mut start = substring_extract.0.to_string();
+    let mut end = substring_extract.1.to_string();
+    ui.label("Substring");
+    ui.indent("3b8169be-1a9a-4629-ac22-cfcdb4599bb5", |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Start:");
+            ui.text_edit_singleline(&mut start);
+        });
+        ui.horizontal(|ui| {
+            ui.label("End:");
+            ui.text_edit_singleline(&mut end);
+        });
+    });
+    let mut new_substr = (0 as u8, 0 as i16);
+    if start.len() > 0 {
+        if let Ok(new_start) = start.parse::<u8>() {
+            new_substr.0 = new_start;
+        }
+    }
+    if end.len() > 0 {
+        if let Ok(new_end) = end.parse::<i16>() {
+            new_substr.1 = new_end;
+        }
+    }
+    if new_substr.ne(substring_extract) {
+        if new_substr.0 == 0 && new_substr.1 == 0 {
+            return None;
+        } else {
+            return Some(new_substr);
+        }
+    }
+    return substring.to_owned();
+}
+
 fn render_config_panel(ctx: &egui::Context, vars: &BoardVariables) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Variables Config")
         .anchor(Align2::RIGHT_TOP, [-5.0, 5.0])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             ui.label(serde_json::to_string(vars).unwrap());
         });

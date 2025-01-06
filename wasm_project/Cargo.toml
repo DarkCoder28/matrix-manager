@@ -1,6 +1,6 @@
 [package]
 name = "wasm_project"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 
@@ -32,3 +32,6 @@ features = [
     "Window",
     "XmlHttpRequest",
 ]
+
+#[dev-dependencies]
+#wasm-pack = "0.12.1

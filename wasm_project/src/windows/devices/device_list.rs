@@ -6,8 +6,15 @@ use shared::device_config::DeviceConfig;
 use crate::{app::State, post::post};
 
 pub fn render_device_list(ctx: &egui::Context, state: Arc<Mutex<State>>, device_editor_open: &mut bool) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Devices")
         .anchor(Align2::RIGHT_BOTTOM, [-5., -5.])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             let devices = state.lock().unwrap().devices.lock().unwrap().clone();
             // Render Default First
@@ -25,12 +32,15 @@ pub fn render_device_list(ctx: &egui::Context, state: Arc<Mutex<State>>, device_
                     render_device(ui, device_ip, device_data, state.clone(), device_editor_open);
                 });
             }
-            ui.separator();
-            if ui.button("Add device").clicked() {
-                state.lock().unwrap().add_device_dialog.open = true;
-            }
             let devices_changed = state.lock().unwrap().devices_has_changed;
             if devices_changed {
+                let mut spacer = ui.available_height();
+                spacer -= 30.;
+                if spacer > 0. {
+                    ui.add_space(spacer);
+                }
+                //
+                ui.separator();
                 if ui.button(RichText::new("Post Changes").color(Color32::RED)).clicked() {
                     post("/api/update/devices", &devices);
                     state.lock().unwrap().devices_has_changed = false;

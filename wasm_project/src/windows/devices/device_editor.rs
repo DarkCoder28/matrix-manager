@@ -130,14 +130,14 @@ fn render_potd_brightness_editor(ui: &mut Ui, device_ip: &str, devices: &mut Dev
                 ui.horizontal(|ui| {
                     ui.label("Brightness Threshold:");
                     let device = devices.get_mut(device_ip).unwrap();
-                    let mut threshold_edit = device.picture_of_the_day_brightness_threshold.to_string();
+                    let mut threshold_edit = device.skip_brightness_threshold.to_string();
                     ui.text_edit_singleline(&mut threshold_edit);
-                    if threshold_edit.ne(&device.picture_of_the_day_brightness_threshold.to_string()) {
+                    if threshold_edit.ne(&device.skip_brightness_threshold.to_string()) {
                         if threshold_edit.len() <= 0 {
                             threshold_edit = 0.to_string();
                         }
                         if let Ok(num) = threshold_edit.parse::<u8>() {
-                            device.picture_of_the_day_brightness_threshold = num;
+                            device.skip_brightness_threshold = num;
                             state.lock().unwrap().devices_has_changed = true;
                         }
                     }
@@ -356,8 +356,15 @@ fn parse_time(time: &str) -> Option<(u8, u8)> {
 }
 
 fn render_config_panel(ctx: &egui::Context, device: &DeviceConfig) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Device Config")
         .anchor(Align2::RIGHT_TOP, [-5.0, 5.0])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             ui.label(serde_json::to_string(device).unwrap());
         });

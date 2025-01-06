@@ -21,7 +21,8 @@ pub struct DeviceConfig {
     pub temperature_colours: TemperatureColours,
     pub boards: Vec<String>,
     pub brightness: Brightnesses,
-    pub picture_of_the_day_brightness_threshold: u8,
+    #[serde(alias="picture_of_the_day_brightness_threshold")]
+    pub skip_brightness_threshold: u8,
     pub proto_version: u64,
 }
 impl Default for DeviceConfig {
@@ -32,7 +33,7 @@ impl Default for DeviceConfig {
             temperature_colours: TemperatureColours::default(),
             boards: vec![String::from("clock")],
             brightness: Vec::new(),
-            picture_of_the_day_brightness_threshold: 25,
+            skip_brightness_threshold: 25,
             proto_version: 0,
         }
     }

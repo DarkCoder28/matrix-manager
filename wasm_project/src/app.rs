@@ -52,7 +52,6 @@ pub struct State {
     //
     pub devices: Arc<Mutex<DeviceConfigs>>,
     pub current_device: Option<String>,
-    pub add_device_dialog: AddDialog,
     pub devices_has_changed: bool,
     pub deleting_device: Option<(String, String)>,
     //

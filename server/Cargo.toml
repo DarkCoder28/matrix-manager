@@ -1,6 +1,6 @@
 [package]
 name = "matrix-manager"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 
@@ -26,3 +26,4 @@ sha2 = "0.10.8"
 base64 = "0.22.1"
 
 shared = { path = "../shared" }
+itertools = "0.14.0"

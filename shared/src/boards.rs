@@ -7,6 +7,8 @@ pub struct BoardDefinition {
     pub name: String,
     pub size: (u8, u8),
     pub board_elements: Vec<BoardElement>,
+    #[serde(skip_serializing_if = "is_false", default)]
+    pub use_skip_brightness_threshold: bool,
 }
 impl Default for BoardDefinition {
     fn default() -> Self {
@@ -34,9 +36,12 @@ impl Default for BoardDefinition {
                     .build()
                     .unwrap(),
             ],
+            use_skip_brightness_threshold: false,
         }
     }
 }
+
+fn is_false(b: &bool) -> bool { !b }
 
 #[derive(Serialize, Deserialize, Builder, Clone, PartialOrd, Debug)]
 #[builder(default)]

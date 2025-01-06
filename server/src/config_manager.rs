@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
@@ -8,7 +8,8 @@ use std::{
 
 use anyhow::Error;
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
+use itertools::Itertools;
+use serde::{Deserialize, Serialize, Serializer};
 use tokio::sync::RwLock;
 use tracing::error;
 
@@ -25,10 +26,24 @@ pub(crate) type Boards = HashMap<String, BoardDefinition>;
 pub(crate) struct Config {
     #[serde(skip)]
     pub(crate) config_path: String,
+    #[serde(serialize_with = "sorted_map")]
     pub(crate) device_configs: DeviceConfigs,
+    #[serde(serialize_with = "sorted_map")]
     pub(crate) board_variables: BoardVariables,
     boards: Boards,
 }
+
+pub fn sorted_map<S: Serializer, K: Serialize + Ord, V: Serialize>(
+    value: &HashMap<K, V>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    value
+        .iter()
+        .sorted_by_key(|v| v.0)
+        .collect::<BTreeMap<_, _>>()
+        .serialize(serializer)
+}
+
 
 impl Config {
     pub(crate) fn get_boards(&self) -> &Boards {
@@ -65,7 +80,7 @@ impl Config {
         let mut default_board_variables = HashMap::new();
         default_board_variables.insert(
             String::from("weekday"),
-            BoardVariable::Time(TimeData::Weekday),
+            BoardVariable::Time(TimeData::Weekday(0, None)),
         );
         default_board_variables.insert(String::from("time"), BoardVariable::Time(TimeData::Time));
         default_board_variables.insert(String::from("date"), BoardVariable::Time(TimeData::Date));
@@ -103,6 +118,7 @@ impl Config {
                     .build()
                     .unwrap(),
             ],
+            use_skip_brightness_threshold: false,
         });
 
         return new_config;

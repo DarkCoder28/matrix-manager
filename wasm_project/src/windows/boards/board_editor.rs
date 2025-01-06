@@ -33,6 +33,10 @@ pub fn render_board_editor(
                 return;
             }
             render_board_size_editor(ui, board);
+            if render_use_skip_brightness_threshold(ui, board) {
+                state.lock().unwrap().boards_has_changed = true;
+                return;
+            }
             render_board_elements(ui, board, state.clone());
             render_board_element_add_delete(ui, board, state.clone());
             //
@@ -105,6 +109,18 @@ fn render_board_size_editor(ui: &mut Ui, board: &mut BoardDefinition) {
     });
 }
 
+fn render_use_skip_brightness_threshold(ui: &mut Ui, board: &mut BoardDefinition) -> bool {
+    let mut changed = false;
+    let orig_value = board.use_skip_brightness_threshold;
+    ui.group(|ui| {
+        ui.checkbox(&mut board.use_skip_brightness_threshold, "Skip if below brightness threshold");
+    });
+    if board.use_skip_brightness_threshold != orig_value {
+        changed = true;
+    }
+    changed
+}
+
 fn render_board_elements(ui: &mut Ui, board: &mut BoardDefinition, state: Arc<Mutex<State>>) {
     for element in &mut board.board_elements {
         let mut open = None;
@@ -144,8 +160,15 @@ fn render_board_element_add_delete(ui: &mut Ui, board: &mut BoardDefinition, sta
 }
 
 fn render_config_panel(ctx: &egui::Context, board: &BoardDefinition) {
+    let mut window_height = ctx.screen_rect().height();
+    window_height-=120.;
+    window_height/=2.;
     egui::Window::new("Board Config")
         .anchor(Align2::RIGHT_TOP, [-5.0, 5.0])
+        .min_height(window_height)
+        .max_height(window_height)
+        .scroll([false, true])
+        .movable(false)
         .show(ctx, |ui| {
             ui.label(serde_json::to_string(board).unwrap());
         });
