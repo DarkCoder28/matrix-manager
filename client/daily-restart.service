@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily Restart Service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/systemctl --message="Daily Reboot" reboot
