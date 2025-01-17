@@ -9,6 +9,11 @@
 
 ## Environment Setup
 - Most of the OS setup tips can be found in the [hzeller/rpi-rgb-led-matrix](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#troubleshooting) repo.
+  - Instead of disabling NTP like is recomended in the repo, it is better to change the configs so it effectively only runs on boot.
+  - You can do this by modifying `/etc/systemd/timesyncd.conf` with the following options under a `[Time]` header
+    - `RootDistanceMaxSec=3600`
+    - `PollIntervalMinSec=31536000`
+    - `PollIntervalMaxSec=31536000`
 - Make sure to use the [Improving Flicker tip](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#improving-flicker) as it is used by default by this program.
 - The [Improving CPU use tip](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#improving-flicker) is a must for running on Pi Zero 2W.
 
