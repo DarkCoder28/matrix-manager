@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Restart Timer
+ConditionACPower=true
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=false
+Unit=daily-restart.service
+
+[Install]
+WantedBy=timers.target
