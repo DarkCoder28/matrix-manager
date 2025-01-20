@@ -15,7 +15,7 @@ wgpu = { version = "*", features = ["webgpu", "webgl"] }
 wasm-bindgen = { version = "0.2.95", features = [ "serde", "serde-serialize", "serde_json" ] }
 wasm-bindgen-futures = "0.4.45"
 serde = "1.0.215"
-serde_json = "1.0.128"
+serde_json = "1.0.137"
 shared = { path = "../shared" }
 futures-util = "0.3.31"
 regex = "1.11.1"
