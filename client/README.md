@@ -15,7 +15,7 @@
     - `PollIntervalMinSec=31536000`
     - `PollIntervalMaxSec=31536000`
 - Make sure to use the [Improving Flicker tip](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#improving-flicker) as it is used by default by this program.
-- The [Improving CPU use tip](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#improving-flicker) is a must for running on Pi Zero 2W.
+- The [Improving CPU use tip](https://github.com/hzeller/rpi-rgb-led-matrix?tab=readme-ov-file#cpu-use) is a must for running on Pi Zero 2W.
 
 ### Service Setup
 - If you are not using the default `pi` user, you may have to modify the supervisor config files to reflect that
