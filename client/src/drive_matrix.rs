@@ -11,9 +11,11 @@ use crate::{commands::interpret::rgb_interpret, state::CanvasState};
 
 pub fn start_matrix(image_cache: TempDir) {
     // Get arguments
-    let mut args = Arguments::from_env();
-    let server_uri: String = args.value_from_str("-s").unwrap_or(String::from("192.168.1.64:12312"));
-    let server_http_uri: String = args.value_from_str("-h").unwrap_or(String::from("http://192.168.1.64:12345"));
+    let server_uri: String = env::var("SERVER_URI").unwrap_or(String::from("192.168.1.64:12312"));
+    let server_http_uri: String = env::var("SERVER_HTTP_URI").unwrap_or(String::from("http://192.168.1.64:12345"));
+    // let mut args = Arguments::from_env();
+    // let server_uri: String = args.value_from_str("-s").unwrap_or(String::from("192.168.1.64:12312"));
+    // let server_http_uri: String = args.value_from_str("-h").unwrap_or(String::from("http://192.168.1.64:12345"));
     //
     let matrix_config: RGBMatrixConfig = argh::from_env();
     let (mut matrix, canvas) = RGBMatrix::new(matrix_config, 0).expect("Matrix init failed.");
